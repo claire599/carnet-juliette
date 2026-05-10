@@ -1007,8 +1007,8 @@ const CONFIG = {
     apiKey: '23cc4634536884cdc88707d303acd6e1',
   },
 };
-const isJsonbinReady = () => CONFIG.jsonbin.binId !== '6a00a9e0c0954111d802f70d' && CONFIG.jsonbin.accessKey !== '$2a$10$BSoicJHtRPQuMTL2tAgIOeoH3dEk366vDd15nd4K9bzkm10jvGvrm';
-const isImgbbReady = () => CONFIG.imgbb.apiKey !== '23cc4634536884cdc88707d303acd6e1';
+const isJsonbinReady = () => /^[a-f0-9]{24}$/i.test(CONFIG.jsonbin.binId) && CONFIG.jsonbin.accessKey.startsWith('$2a$');
+const isImgbbReady = () => /^[a-f0-9]{32}$/i.test(CONFIG.imgbb.apiKey);
 
 // ====== DATA ======
 const TYPES = {
