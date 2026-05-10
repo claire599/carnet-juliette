@@ -272,60 +272,51 @@ body {
 @media (max-width: 599px) {
   .tile.large, .tile.wide { grid-column: span 2; }
 }
-.tile-image {
+.tile-frame {
   position: absolute; inset: 0;
-  background-size: cover; background-position: center;
-  transition: transform 0.6s;
+  display: flex; flex-direction: column;
 }
-.tile:hover .tile-image { transform: scale(1.05); }
-.tile-cover {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; justify-content: space-between;
-  padding: 18px;
+.tile-frame.jaune { background: var(--jaune); }
+.tile-frame.rose { background: var(--rose); }
+.tile-frame.vert { background: var(--vert); }
+.tile-frame.gris { background: var(--grispast); }
+.tile-frame-header {
+  padding: 14px 16px 6px; flex-shrink: 0;
 }
-.tile-cover.jaune { background: var(--jaune); }
-.tile-cover.rose { background: var(--rose); }
-.tile-cover.vert { background: var(--vert); }
-.tile-cover.gris { background: var(--grispast); }
 .tile-kind {
   font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
   font-weight: 700; color: var(--noir); opacity: 0.6;
 }
-.tile-cover-title {
+.tile-image {
+  flex: 1 1 auto; min-height: 0;
+  background-size: cover; background-position: center;
+  transition: transform 0.6s;
+  margin: 6px 16px;
+}
+.tile:hover .tile-image { transform: scale(1.03); }
+.tile-spacer {
+  flex: 1 1 auto; min-height: 0;
+}
+.tile-frame-footer {
+  padding: 10px 16px 16px; flex-shrink: 0;
+}
+.tile-title {
   font-family: 'Bodoni Moda', serif; font-weight: 400;
-  font-size: 18px; line-height: 1.18; color: var(--noir);
+  font-size: 16px; line-height: 1.2; color: var(--noir);
   letter-spacing: -0.01em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin-bottom: 4px;
 }
-.tile.large .tile-cover-title { font-size: 26px; }
-.tile.wide .tile-cover-title { font-size: 22px; }
-.tile-cover-meta {
+.tile.large .tile-title { font-size: 24px; -webkit-line-clamp: 4; }
+.tile.wide .tile-title { font-size: 19px; }
+.tile.tall .tile-title { -webkit-line-clamp: 4; }
+.tile-meta {
   font-family: 'Cormorant Garamond', serif; font-style: italic;
-  font-size: 13px; color: var(--noir); opacity: 0.65;
+  font-size: 12px; color: var(--noir); opacity: 0.65;
 }
-.tile-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(26,26,26,0.78) 0%, transparent 55%);
-  display: flex; flex-direction: column; justify-content: flex-end;
-  padding: 18px; color: var(--blanc); opacity: 0;
-  transition: opacity 0.3s;
-}
-.tile:hover .tile-overlay { opacity: 1; }
-.tile-overlay-date {
-  font-family: 'Cormorant Garamond', serif; font-style: italic;
-  font-size: 13px; margin-bottom: 4px;
-}
-.tile-overlay-title {
-  font-family: 'Bodoni Moda', serif; font-size: 17px; line-height: 1.2;
-}
-.tile.large .tile-overlay-title { font-size: 24px; }
-.tile-image-kind {
-  position: absolute; top: 12px; left: 12px;
-  padding: 4px 10px; background: rgba(255,255,255,0.92);
-  border-radius: 999px; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.18em; text-transform: uppercase; color: var(--noir);
-  opacity: 0; transition: opacity 0.3s; z-index: 2;
-}
-.tile:hover .tile-image-kind { opacity: 1; }
 
 /* ====== FAB ====== */
 .fab {
@@ -1235,23 +1226,17 @@ function renderTile(p, i) {
   const size = TILE_PATTERN[i % TILE_PATTERN.length];
   const date = fmtDate(p.date);
 
-  if (p.cover) {
-    return `<div class="tile ${size}" onclick="openDetail('${p.id}')">
-      <div class="tile-image" style="background-image:url('${p.cover}')"></div>
-      <div class="tile-image-kind">${t.label}</div>
-      <div class="tile-overlay">
-        <div class="tile-overlay-date">${date}</div>
-        <div class="tile-overlay-title">${escapeHtml(p.title)}</div>
-      </div>
-    </div>`;
-  }
-  // Pas de photo : couverture typographique pastel
+  const middleHtml = p.cover
+    ? `<div class="tile-image" style="background-image:url('${p.cover}')"></div>`
+    : `<div class="tile-spacer"></div>`;
+
   return `<div class="tile ${size}" onclick="openDetail('${p.id}')">
-    <div class="tile-cover ${palette}">
-      <div class="tile-kind">${t.label}</div>
-      <div>
-        <div class="tile-cover-title">${escapeHtml(p.title)}</div>
-        <div class="tile-cover-meta">${date}</div>
+    <div class="tile-frame ${palette}">
+      <div class="tile-frame-header"><span class="tile-kind">${t.label}</span></div>
+      ${middleHtml}
+      <div class="tile-frame-footer">
+        <div class="tile-title">${escapeHtml(p.title)}</div>
+        <div class="tile-meta">${date}</div>
       </div>
     </div>
   </div>`;
