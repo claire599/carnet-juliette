@@ -399,43 +399,16 @@ body {
   aspect-ratio: 16/9; background-size: cover; background-position: center;
   position: relative;
 }
-.detail-cover-photo .replace-cover-btn {
-  position: absolute; top: 16px; right: 16px;
-  background: rgba(255,255,255,0.92);
-  border: none; padding: 8px 16px; border-radius: 999px;
-  font-family: 'Manrope', sans-serif; font-size: 11px;
-  font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--noir); cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  opacity: 0; transition: opacity 0.3s;
-}
-.detail-cover-photo:hover .replace-cover-btn { opacity: 1; }
-.detail-cover-photo .replace-cover-btn:hover { background: var(--blanc); }
 
-/* Bloc cover unifié : photo + titre superposé */
-.detail-cover-photo-block {
-  position: relative;
+/* Bandeau photo intégré dans le bloc cover pastel */
+.detail-cover-banner {
+  margin: 28px -40px; aspect-ratio: 16/7;
   background-size: cover; background-position: center;
-  background-color: var(--gris-pale);
-  min-height: 380px;
-  display: flex; align-items: flex-end;
+  background-color: rgba(0,0,0,0.05);
+  position: relative;
 }
-@media (max-width: 600px) { .detail-cover-photo-block { min-height: 320px; } }
-.detail-cover-photo-overlay {
-  width: 100%;
-  padding: 80px 40px 40px;
-  background: linear-gradient(to top, rgba(26,26,26,0.85) 0%, rgba(26,26,26,0.45) 50%, rgba(26,26,26,0) 100%);
-  text-align: center;
-}
-.detail-cover-photo-overlay .detail-cover-kind {
-  color: var(--blanc); opacity: 0.7;
-}
-.detail-cover-photo-overlay .detail-title { color: var(--blanc); }
-.detail-cover-photo-overlay .detail-title em { color: rgba(255,255,255,0.7); }
-.detail-cover-photo-overlay .detail-meta { color: var(--blanc); opacity: 0.85; }
-.detail-cover-photo-overlay .detail-meta span:not(:last-child)::after { color: rgba(255,255,255,0.5); }
-.detail-cover-photo-block .replace-cover-btn {
-  position: absolute; top: 16px; right: 16px;
+.detail-cover-banner .replace-cover-btn {
+  position: absolute; top: 14px; right: 14px;
   background: rgba(255,255,255,0.92);
   border: none; padding: 8px 16px; border-radius: 999px;
   font-family: 'Manrope', sans-serif; font-size: 11px;
@@ -443,10 +416,11 @@ body {
   color: var(--noir); cursor: pointer;
   opacity: 0; transition: opacity 0.3s; z-index: 2;
 }
-.detail-cover-photo-block:hover .replace-cover-btn { opacity: 1; }
+.detail-cover-banner:hover .replace-cover-btn { opacity: 1; }
+.detail-cover-banner .replace-cover-btn:hover { background: var(--blanc); }
 @media (max-width: 600px) {
-  .detail-cover-photo-overlay { padding: 56px 24px 32px; }
-  .detail-cover-photo-block .replace-cover-btn { opacity: 1; }
+  .detail-cover-banner { margin: 22px -24px; aspect-ratio: 16/9; }
+  .detail-cover-banner .replace-cover-btn { opacity: 1; }
 }
 
 .add-cover-btn {
@@ -1326,29 +1300,28 @@ function renderDetail(id) {
   const palette = t.palette;
   const date = fmtDate(p.date, true);
 
-  // Bloc cover : si photo, photo + titre superposé (un seul bloc)
-  //              sinon, bloc pastel avec titre
-  const coverHeader = p.cover
-    ? `<div class="detail-cover-photo-block" style="background-image:url('${p.cover}')">
+  // Bloc cover pastel — toujours.
+  // Si photo, elle s'insère en bandeau central, type au-dessus, titre+date en-dessous.
+  const bannerHtml = p.cover
+    ? `<div class="detail-cover-banner" style="background-image:url('${p.cover}')">
          <button class="replace-cover-btn" onclick="uploadCover('${p.id}')">◷ Remplacer</button>
-         <div class="detail-cover-photo-overlay">
-           <div class="detail-cover-kind">${t.label}</div>
-           <h1 class="detail-title">${escapeHtml(p.title)}</h1>
-           <div class="detail-meta">
-             <span>${date}</span>
-             ${p.location ? `<span>${escapeHtml(p.location)}</span>` : ''}
-           </div>
-         </div>
        </div>`
-    : `<div class="detail-cover-block ${palette}">
-         <div class="detail-cover-kind">${t.label}</div>
-         <h1 class="detail-title">${escapeHtml(p.title)}</h1>
-         <div class="detail-meta">
-           <span>${date}</span>
-           ${p.location ? `<span>${escapeHtml(p.location)}</span>` : ''}
-         </div>
-         <button class="add-cover-btn" onclick="uploadCover('${p.id}')">◷ Ajouter une photo de couverture</button>
-       </div>`;
+    : '';
+  const addCoverHtml = !p.cover
+    ? `<button class="add-cover-btn" onclick="uploadCover('${p.id}')">◷ Ajouter une photo de couverture</button>`
+    : '';
+  const coverHeader = `
+    <div class="detail-cover-block ${palette}">
+      <div class="detail-cover-kind">${t.label}</div>
+      ${bannerHtml}
+      <h1 class="detail-title">${escapeHtml(p.title)}</h1>
+      <div class="detail-meta">
+        <span>${date}</span>
+        ${p.location ? `<span>${escapeHtml(p.location)}</span>` : ''}
+      </div>
+      ${addCoverHtml}
+    </div>
+  `;
 
   const tagsHtml = (p.tags||[]).length
     ? `<div class="detail-tags">${p.tags.map(t=>`<span class="detail-tag">${escapeHtml(t)}</span>`).join('')}</div>`
