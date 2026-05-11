@@ -197,7 +197,8 @@ body {
   display: grid; grid-template-columns: 100px 1fr; gap: 24px;
   padding: 28px 0; border-top: 1px solid var(--rule);
   cursor: pointer; transition: all 0.3s;
-  align-items: start;
+  align-items: start; position: relative;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .timeline-item:hover { padding-left: 12px; }
 .timeline-item:hover .timeline-item-title { color: var(--gris-fonce); }
@@ -264,8 +265,10 @@ body {
 .tile {
   position: relative; overflow: hidden; cursor: pointer;
   background: var(--gris-pale); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .tile:hover { transform: scale(0.98); }
+.tile:active { transform: scale(0.96); }
 .tile.large { grid-row: span 2; grid-column: span 2; }
 .tile.tall  { grid-row: span 2; }
 .tile.wide  { grid-column: span 2; }
@@ -318,6 +321,27 @@ body {
   font-size: 12px; color: var(--noir); opacity: 0.65;
 }
 
+/* Bouton × pour supprimer (visible au survol desktop, caché sur mobile) */
+.item-delete {
+  position: absolute; top: 10px; right: 10px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,0.92); border: none;
+  color: var(--gris-fonce); font-size: 18px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; z-index: 5;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+.tile:hover .item-delete,
+.timeline-item:hover .item-delete { opacity: 1; }
+.item-delete:hover { background: #B85A52; color: var(--blanc); }
+.item-delete-tl {
+  top: 50%; transform: translateY(-50%);
+  background: var(--blanc);
+}
+@media (hover: none) {
+  .item-delete { display: none; }
+}
+
 /* ====== FAB ====== */
 .fab {
   position: fixed; bottom: 28px; right: 28px;
@@ -361,6 +385,19 @@ body {
   cursor: pointer; transition: all 0.2s;
 }
 .edit-btn:hover { background: var(--noir); color: var(--blanc); }
+
+.detail-actions { display: flex; gap: 8px; align-items: center; }
+.delete-btn {
+  background: transparent; border: 1px solid var(--rule-strong);
+  color: var(--gris-fonce); padding: 7px 16px; border-radius: 999px;
+  font-family: 'Manrope', sans-serif; font-size: 11px;
+  font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+}
+.delete-btn:hover { background: #B85A52; color: var(--blanc); border-color: #B85A52; }
+@media (max-width: 600px) {
+  .delete-btn, .edit-btn { padding: 7px 12px; font-size: 10px; }
+}
 
 .note-item { position: relative; }
 .note-actions {
@@ -446,6 +483,31 @@ body {
 .save-indicator.saved::before { background: #5A6B4D; }
 .save-indicator.error::before { background: #8B5F58; }
 @media (max-width: 600px) { .save-indicator { bottom: 22px; left: 18px; font-size: 12px; padding: 6px 12px; } }
+
+/* Hint bubble : indice découvrabilité appui long, mobile only */
+.hint-bubble {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: var(--noir); color: var(--blanc);
+  padding: 10px 18px; border-radius: 999px;
+  font-family: 'Manrope', sans-serif; font-size: 12px;
+  font-weight: 500; letter-spacing: 0.02em;
+  display: none; align-items: center; gap: 8px;
+  box-shadow: 0 4px 16px rgba(26,26,26,0.25);
+  z-index: 90; pointer-events: none;
+  animation: hintFade 5s ease-out forwards;
+  white-space: nowrap;
+}
+.hint-bubble .hint-icon {
+  font-size: 14px; line-height: 1;
+}
+@media (hover: none) and (max-width: 900px) {
+  .hint-bubble { display: flex; }
+}
+@keyframes hintFade {
+  0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  10%, 80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(8px); pointer-events: none; }
+}
 .detail-cover-block {
   padding: 72px 40px 48px; text-align: center;
 }
@@ -881,6 +943,10 @@ body {
   </header>
   <div class="mosaic-grid" id="mosaicGrid"></div>
   <button class="fab" onclick="openAddModal()" aria-label="Ajouter un projet">+</button>
+  <div class="hint-bubble" id="hintBubbleMosaic">
+    <span class="hint-icon">↥</span>
+    Appui long sur un projet pour le supprimer
+  </div>
 </div>
 
 <!-- TIMELINE -->
@@ -916,7 +982,10 @@ body {
         </svg>
         Retour à la mosaïque
       </button>
-      <button class="edit-btn" id="editProjectBtn" onclick="openEditModal()">Modifier</button>
+      <div class="detail-actions">
+        <button class="delete-btn" onclick="deleteProject()">Supprimer</button>
+        <button class="edit-btn" id="editProjectBtn" onclick="openEditModal()">Modifier</button>
+      </div>
     </div>
   </header>
   <div id="detailContent"></div>
@@ -1230,7 +1299,14 @@ function renderTile(p, i) {
     ? `<div class="tile-image" style="background-image:url('${p.cover}')"></div>`
     : `<div class="tile-spacer"></div>`;
 
-  return `<div class="tile ${size}" onclick="openDetail('${p.id}')">
+  return `<div class="tile ${size}"
+    onclick="itemClick('${p.id}')"
+    ontouchstart="itemPressStart('${p.id}')"
+    ontouchend="itemPressEnd()"
+    ontouchmove="itemPressEnd()"
+    ontouchcancel="itemPressEnd()"
+    oncontextmenu="return false">
+    <button class="item-delete" onclick="event.stopPropagation(); deleteProject('${p.id}')" title="Supprimer">×</button>
     <div class="tile-frame ${palette}">
       <div class="tile-frame-header"><span class="tile-kind">${t.label}</span></div>
       ${middleHtml}
@@ -1256,7 +1332,14 @@ function renderTimelineItem(p) {
   const cover = p.cover
     ? `<div class="timeline-cover has-image" style="background-image:url('${p.cover}')"></div>`
     : `<div class="timeline-cover ${palette}">${escapeHtml(p.title)}</div>`;
-  return `<div class="timeline-item" onclick="openDetail('${p.id}')">
+  return `<div class="timeline-item"
+    onclick="itemClick('${p.id}')"
+    ontouchstart="itemPressStart('${p.id}')"
+    ontouchend="itemPressEnd()"
+    ontouchmove="itemPressEnd()"
+    ontouchcancel="itemPressEnd()"
+    oncontextmenu="return false">
+    <button class="item-delete item-delete-tl" onclick="event.stopPropagation(); deleteProject('${p.id}')" title="Supprimer">×</button>
     <div class="timeline-date">${date}</div>
     <div class="timeline-content">
       ${cover}
@@ -1641,6 +1724,49 @@ function openAddModal() {
   renderTypeGrid();
   document.getElementById('addModal').classList.add('active');
   document.body.style.overflow = 'hidden';
+}
+
+function deleteProject(id) {
+  const projectId = id || currentDetailId;
+  if (!projectId) return;
+  const p = projects.find(x => x.id === projectId);
+  if (!p) return;
+  const msg = `Supprimer définitivement « ${p.title} » ?\n\nToutes les notes et photos associées seront perdues.`;
+  if (!confirm(msg)) return;
+  projects = projects.filter(x => x.id !== projectId);
+  if (currentDetailId === projectId) {
+    currentDetailId = null;
+    showView('mosaic');
+  } else {
+    renderMosaic();
+    if (document.getElementById('view-timeline').classList.contains('active')) renderTimeline();
+  }
+  scheduleSave();
+}
+
+// ====== Appui long mobile pour supprimer ======
+let pressTimer = null;
+let pressTriggered = false;
+const PRESS_DELAY = 600;
+
+function itemPressStart(id) {
+  pressTriggered = false;
+  clearTimeout(pressTimer);
+  pressTimer = setTimeout(() => {
+    pressTriggered = true;
+    if (navigator.vibrate) navigator.vibrate(40);
+    deleteProject(id);
+  }, PRESS_DELAY);
+}
+function itemPressEnd() {
+  clearTimeout(pressTimer);
+}
+function itemClick(id) {
+  if (pressTriggered) {
+    pressTriggered = false;
+    return;
+  }
+  openDetail(id);
 }
 
 function openEditModal() {
